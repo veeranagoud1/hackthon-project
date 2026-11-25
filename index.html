@@ -1,0 +1,277 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Student Expense Tracker</title>
+
+<style>
+body {
+    font-family: Arial, sans-serif;
+    background: #f4f6f9;
+    margin: 0;
+    padding: 20px;
+}
+.container {
+    max-width: 850px;
+    margin: auto;
+    background: white;
+    padding: 25px;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px #ddd;
+}
+h1 {
+    text-align: center;
+    color: #243b53;
+}
+.total {
+    background: #e0f2fe;
+    padding: 20px;
+    text-align: center;
+    border-radius: 10px;
+    margin-bottom: 20px;
+}
+.total h2 {
+    margin: 5px;
+}
+form {
+    display: grid;
+    gap: 12px;
+}
+input, select, button {
+    padding: 12px;
+    font-size: 16px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+}
+button {
+    background: #2563eb;
+    color: white;
+    border: none;
+    cursor: pointer;
+}
+button:hover {
+    background: #1d4ed8;
+}
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+th, td {
+    padding: 10px;
+    border-bottom: 1px solid #ddd;
+    text-align: left;
+}
+.delete {
+    background: #dc2626;
+}
+.summary {
+    margin-top: 25px;
+    padding: 15px;
+    background: #f1f5f9;
+    border-radius: 8px;
+}
+</style>
+</head>
+
+<body><h2>Add Your Expense</h2>
+
+<form>
+    <label>Expense Name:</label>
+    <input type="text" placeholder="Enter expense name">
+    <br><br>
+
+    <label>Amount:</label>
+    <input type="number" placeholder="Enter amount">
+    <br><br>
+
+    <label>Category:</label>
+   <select>
+    <option value="">Select Category</option>
+    <option value="Food">Food</option>
+    <option value="Travel">Travel</option>
+    <option value="Education">Education</option>
+    <option value="Shopping">Shopping</option>
+    <option value="Other">Other</option>
+</select>
+    <br><br>
+
+    <label>Date:</label>
+    <input type="date">
+    <br><br>
+
+    <button type="button" id="addButton">Add Expense</button>
+</form>
+
+<div class="container">
+<h1>Student Expense Tracker</h1>
+
+<div class="total">
+    <h2>Total Expenses</h2>
+    <h2 id="total">₹0</h2>
+    <p id="count">0 expenses</p>
+</div>
+
+<h3>Add Expense</h3>
+
+<form id="expenseForm">
+    <input type="text" id="name" placeholder="Expense name" required>
+
+    <input type="number" id="amount" placeholder="Amount (₹)" min="0.01" step="0.01" required>
+
+    <select id="category">
+        <option>Food</option>
+        <option>Travel</option>
+        <option>Books</option>
+        <option>Shopping</option>
+        <option>Other</option>
+    </select>
+
+    <input type="date" id="date" required>
+
+    <button type="submit">Add Expense</button>
+</form>
+
+<h3>Expense List</h3>
+
+<table>
+<thead>
+<tr>
+    <th>Name</th>
+    <th>Amount</th>
+    <th>Category</th>
+    <th>Date</th>
+    <th>Action</th>
+</tr>
+</thead>
+<tbody id="expenseList"></tbody>
+</table>
+
+<div class="summary">
+    <h3>Category Analysis</h3>
+    <div id="analysis"></div>
+</div>
+
+</div>
+
+<script>
+let expenses = JSON.parse(localStorage.getItem("expenses")) || [];
+
+const form = document.getElementById("expenseForm");
+const nameInput = document.getElementById("name");
+const amountInput = document.getElementById("amount");
+const categoryInput = document.getElementById("category");
+const dateInput = document.getElementById("date");
+
+dateInput.value = new Date().toISOString().split("T")[0];
+
+function saveExpenses() {
+    localStorage.setItem("expenses", JSON.stringify(expenses));
+}
+
+function renderExpenses() {
+    const list = document.getElementById("expenseList");
+    list.innerHTML = "";
+
+    expenses.forEach(expense => {
+        const row = document.createElement("tr");
+
+        const nameCell = document.createElement("td");
+        nameCell.textContent = expense.name;
+
+        const amountCell = document.createElement("td");
+        amountCell.textContent = "₹" + expense.amount;
+
+        const categoryCell = document.createElement("td");
+        categoryCell.textContent = expense.category;
+
+        const dateCell = document.createElement("td");
+        dateCell.textContent = expense.date;
+
+        const actionCell = document.createElement("td");
+        const deleteButton = document.createElement("button");
+        deleteButton.textContent = "Delete";
+        deleteButton.className = "delete";
+        deleteButton.onclick = () => deleteExpense(expense.id);
+
+        actionCell.appendChild(deleteButton);
+
+        row.appendChild(nameCell);
+        row.appendChild(amountCell);
+        row.appendChild(categoryCell);
+        row.appendChild(dateCell);
+        row.appendChild(actionCell);
+
+        list.appendChild(row);
+    });
+
+    updateTotal();
+    renderCategoryAnalysis();
+}
+
+function updateTotal() {
+    const total = expenses.reduce((sum, expense) => sum + expense.amount, 0);
+
+    document.getElementById("total").textContent = "₹" + total.toFixed(2);
+    document.getElementById("count").textContent = expenses.length + " expenses";
+}
+
+function renderCategoryAnalysis() {
+    const analysis = document.getElementById("analysis");
+    analysis.innerHTML = "";
+
+    const categories = {};
+
+    expenses.forEach(expense => {
+        categories[expense.category] =
+            (categories[expense.category] || 0) + expense.amount;
+    });
+
+    for (const category in categories) {
+        const p = document.createElement("p");
+        p.textContent = category + ": ₹" + categories[category].toFixed(2);
+        analysis.appendChild(p);
+    }
+
+    if (expenses.length === 0) {
+        analysis.textContent = "No expenses yet.";
+    }
+}
+
+form.addEventListener("submit", function(event) {
+    event.preventDefault();
+
+    const expense = {
+        id: Date.now(),
+        name: nameInput.value.trim(),
+        amount: Number(amountInput.value),
+        category: categoryInput.value,
+        date: dateInput.value
+    };
+
+    if (!expense.name || expense.amount <= 0) {
+        alert("Enter valid expense details.");
+        return;
+    }
+
+    expenses.push(expense);
+    saveExpenses();
+    renderExpenses();
+
+    form.reset();
+    dateInput.value = new Date().toISOString().split("T")[0];
+});
+
+function deleteExpense(id) {
+    expenses = expenses.filter(expense => expense.id !== id);
+    saveExpenses();
+    renderExpenses();
+}
+
+renderExpenses();
+</script>
+
+</body>
+</html>
